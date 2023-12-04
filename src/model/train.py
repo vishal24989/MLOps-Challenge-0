@@ -3,9 +3,11 @@
 import argparse
 import glob
 import os
+import mlflow
 
 import pandas as pd
 
+from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 
 
@@ -35,14 +37,21 @@ def get_csvs_df(path):
 
 # TO DO: add function to split data
 def split_data(df):
-    # Extracting the features and target variable from the dataframe
-    X = df[['Pregnancies', 'PlasmaGlucose', 'DiastolicBloodPressure', 'TricepsThickness', 'SerumInsulin', 'BMI', 'DiabetesPedigree', 'Age']].values
-    y = df['Diabetic'].values
+    with mlflow.start_run():
+        mlflow.autolog()  # This will enable the autologging
 
-    # Splitting the dataset into training and test sets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=0)
+        # Extract features and target
+        X = df[['Pregnancies', 'PlasmaGlucose', 'DiastolicBloodPressure', 'TricepsThickness', 'SerumInsulin', 'BMI', 'DiabetesPedigree', 'Age']].values
+        y = df['Diabetic'].values
 
-    return X_train, X_test, y_train, y_test
+        # Split the dataset
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=0)
+
+        # Log the size of each split
+        mlflow.log_metric("size_train_set", len(X_train))
+        mlflow.log_metric("size_test_set", len(X_test))
+
+        return X_train, X_test, y_train, y_test
 
 def train_model(reg_rate, X_train, X_test, y_train, y_test):
     # train model
